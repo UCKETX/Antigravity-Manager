@@ -3,7 +3,7 @@
 //! 此模块提供独立运行的 Web 服务端 API，复用现有业务逻辑。
 
 use axum::{
-    extract::{Path, Query, State, rejection::JsonRejection, FromRequest, Request},
+    extract::{Host, Path, Query, State, rejection::JsonRejection, FromRequest, Request},
     http::StatusCode,
     response::{IntoResponse, Response, Json, Sse},
     routing::{delete, get, post, put},
@@ -929,10 +929,11 @@ struct OAuthUrlResponse {
 
 async fn prepare_oauth_url(
     State(_state): State<Arc<WebApiState>>,
+    Host(host): Host,
 ) -> impl IntoResponse {
     // Web 模式下返回 OAuth URL，由用户手动在浏览器中打开
-    // 使用固定的 redirect_uri (用户需要手动复制回调 URL)
-    let redirect_uri = "http://localhost:9004/callback".to_string();
+    // 使用动态 redirect_uri (基于访问的主机名)
+    let redirect_uri = format!("http://{}/callback", host);
     let url = modules::oauth::get_auth_url(&redirect_uri);
     
     ApiResponse::ok(OAuthUrlResponse {
