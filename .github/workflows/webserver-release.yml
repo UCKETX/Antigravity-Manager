@@ -1,0 +1,47 @@
+name: Webserver Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "src-tauri/**/*"
+      - "src/**/*"
+      - "package.json"
+      - "package-server.sh"
+      - ".github/workflows/webserver-release.yml"
+
+jobs:
+  build-webserver:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libssl-dev pkg-config build-essential libsoup-3.0-dev
+
+      - name: Node.js setup
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install frontend dependencies
+        run: npm install
+
+      - name: Rust setup
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build Webserver Package
+        run: |
+          chmod +x package-server.sh
+          ./package-server.sh
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: antigravity-server-linux-amd64
+          path: build/*.tar.gz
+          if-no-files-found: error
